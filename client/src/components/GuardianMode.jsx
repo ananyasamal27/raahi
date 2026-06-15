@@ -5,7 +5,7 @@ import { Shield, ShieldAlert, ShieldOff, PhoneCall, MapPin, Radio, AlertTriangle
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Dynamically connect to the correct backend depending on environment
-const socketUrl = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
+const socketUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : 'https://raahi-ufb6.onrender.com');
 const socket = io(socketUrl, {
   autoConnect: false,
   reconnection: true,
@@ -35,55 +35,59 @@ export default function GuardianMode() {
 
   // Connect socket on mount, disconnect on unmount, track link states
   useEffect(() => {
-    socket.connect();
-    
-    socket.on('connect', () => {
+    const handleConnect = () => {
       console.log('Socket.IO connected to backend server');
       setConnectionStatus('connected');
-    });
+    };
 
-    socket.on('disconnect', () => {
+    const handleDisconnect = () => {
       console.log('Socket.IO disconnected');
       setConnectionStatus('disconnected');
-    });
+    };
 
-    socket.on('connect_error', (err) => {
+    const handleConnectError = (err) => {
       console.error('Socket.IO connection error:', err);
       setConnectionStatus('error');
-    });
+    };
 
-    socket.on('reconnect_attempt', (attempt) => {
+    const handleReconnectAttempt = (attempt) => {
       console.log(`Socket.IO reconnect attempt #${attempt}`);
       setConnectionStatus('connecting');
-    });
+    };
+
+    socket.connect();
+    
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
+    socket.on('reconnect_attempt', handleReconnectAttempt);
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('connect_error');
-      socket.off('reconnect_attempt');
-      socket.off('guardian-tick');
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
+      socket.off('reconnect_attempt', handleReconnectAttempt);
       socket.disconnect();
     };
   }, []);
 
   // Handle Socket events when guardianMode is active (only if online)
   useEffect(() => {
-    if (guardianActive && !offlineMode) {
-      socket.on('guardian-tick', (data) => {
-        setLiveTracking({
-          lat: data.lat,
-          lng: data.lng,
-          elapsedSeconds: data.elapsedSeconds,
-          signal: data.signal
-        });
+    const handleGuardianTick = (data) => {
+      setLiveTracking({
+        lat: data.lat,
+        lng: data.lng,
+        elapsedSeconds: data.elapsedSeconds,
+        signal: data.signal
       });
-    } else {
-      socket.off('guardian-tick');
+    };
+
+    if (guardianActive && !offlineMode) {
+      socket.on('guardian-tick', handleGuardianTick);
     }
 
     return () => {
-      socket.off('guardian-tick');
+      socket.off('guardian-tick', handleGuardianTick);
     };
   }, [guardianActive, offlineMode, setLiveTracking]);
 

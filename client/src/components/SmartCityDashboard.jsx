@@ -1,8 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Users, Timer, Leaf, AlertTriangle, TrendingDown, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRaahiStore } from '../store/useRaahiStore';
 
 export default function SmartCityDashboard() {
+  const { offlineMode } = useRaahiStore();
+  const [stats, setStats] = useState({
+    avgResponseTime: "4m 12s",
+    activeGuardians: 1480,
+    co2EmissionsSavedKg: 14820,
+    incidentResolutionRate: "94.2%",
+    activeSensors: 432,
+    sensorStatus: "excellent"
+  });
+
+  useEffect(() => {
+    if (offlineMode) return;
+
+    const API_BASE_URL =
+      import.meta.env.VITE_API_URL ||
+      (import.meta.env.DEV
+        ? 'http://localhost:3001'
+        : 'https://raahi-ufb6.onrender.com');
+
+    const fetchStats = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/analytics`);
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch smart city stats", error);
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+
+    return () => clearInterval(interval);
+  }, [offlineMode]);
+
   const incidentReports = [
     { location: "Tambaram Local Platform 1", type: "Heavy Crowding", reports: 84, trend: "+12% this week", severity: "medium" },
     { location: "Hebbal Flyover Junction", type: "Poor lighting", reports: 42, trend: "-24% (fixed)", severity: "low" },
@@ -26,20 +64,22 @@ export default function SmartCityDashboard() {
         {/* Live indicator */}
         <div className="flex items-center gap-2 mt-4 md:mt-0 px-4 py-2 bg-white/5 border border-white/10 rounded-xl">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-teal opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-neon-teal"></span>
+            <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${offlineMode ? 'bg-amber animate-pulse' : 'bg-neon-teal animate-ping'}`}></span>
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${offlineMode ? 'bg-amber' : 'bg-neon-teal'}`}></span>
           </span>
-          <span className="text-xs text-slate-300 font-mono font-bold uppercase tracking-wider">LIVE TELEMETRY: SYNCED</span>
+          <span className="text-xs text-slate-300 font-mono font-bold uppercase tracking-wider">
+            {offlineMode ? 'TELEMETRY: OFFLINE MESH' : 'LIVE TELEMETRY: SYNCED'}
+          </span>
         </div>
       </div>
 
       {/* Grid of Key Telemetry Indicators */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { title: "Avg Emergency Dispatch", val: "4m 12s", desc: "-18% due to RAAHI safe Corridors", icon: <Timer className="w-5 h-5 text-neon-teal" />, color: "border-neon-teal/20 bg-neon-teal/5" },
-          { title: "Guardians Active Now", val: "1,480", desc: "+320 peer escorts patrolling", icon: <Users className="w-5 h-5 text-electric-cyan" />, color: "border-electric-cyan/20 bg-electric-cyan/5" },
-          { title: "CO₂ Emissions Saved", val: "14,820 kg", desc: "Decentralized carbon offset logs", icon: <Leaf className="w-5 h-5 text-amber" />, color: "border-amber/20 bg-amber/5" },
-          { title: "Reported Incidents Resolved", val: "94.2%", desc: "Smart city grid action dispatch", icon: <CheckCircle2 className="w-5 h-5 text-teal-400" />, color: "border-teal-500/20 bg-teal-500/5" }
+          { title: "Avg Emergency Dispatch", val: stats.avgResponseTime, desc: "-18% due to RAAHI safe Corridors", icon: <Timer className="w-5 h-5 text-neon-teal" />, color: "border-neon-teal/20 bg-neon-teal/5" },
+          { title: "Guardians Active Now", val: stats.activeGuardians.toLocaleString(), desc: "+320 peer escorts patrolling", icon: <Users className="w-5 h-5 text-electric-cyan" />, color: "border-electric-cyan/20 bg-electric-cyan/5" },
+          { title: "CO₂ Emissions Saved", val: `${stats.co2EmissionsSavedKg.toLocaleString()} kg`, desc: "Decentralized carbon offset logs", icon: <Leaf className="w-5 h-5 text-amber" />, color: "border-amber/20 bg-amber/5" },
+          { title: "Reported Incidents Resolved", val: stats.incidentResolutionRate, desc: "Smart city grid action dispatch", icon: <CheckCircle2 className="w-5 h-5 text-teal-400" />, color: "border-teal-500/20 bg-teal-500/5" }
         ].map((item, idx) => (
           <div key={idx} className={`p-6 border rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden ${item.color}`}>
             <div className="flex items-center justify-between">
