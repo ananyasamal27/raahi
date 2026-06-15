@@ -1,0 +1,16 @@
+{
+  "name": "raahi-root",
+  "version": "1.0.0",
+  "description": "RAAHI - India's AI Co-Pilot for Safe, Predictive & Sustainable Commutes",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "install-all": "npm install && npm install --prefix client && npm install --prefix server",
+    "build": "npm run build --prefix client",
+    "start": "node server/index.js",
+    "prod-run": "npm run build && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
