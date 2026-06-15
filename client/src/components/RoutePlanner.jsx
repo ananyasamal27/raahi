@@ -123,7 +123,13 @@ export default function RoutePlanner() {
     }
 
     try {
-      const response = await fetch('/api/route', {
+      const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? 'http://localhost:3001'
+    : 'https://raahi-ufb6.onrender.com');
+
+const response = await fetch(`${API_BASE_URL}/api/route`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
