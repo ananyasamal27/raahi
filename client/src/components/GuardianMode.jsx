@@ -4,8 +4,9 @@ import { io } from 'socket.io-client';
 import { Shield, ShieldAlert, ShieldOff, PhoneCall, MapPin, Radio, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Connect to the socket server relatively to support single-port deployment
-const socket = io(window.location.origin, {
+// Dynamically connect to the correct backend depending on environment
+const socketUrl = import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin;
+const socket = io(socketUrl, {
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 15,
